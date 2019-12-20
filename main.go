@@ -1,14 +1,17 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
-	"github.com/zlh2015/go-anyway/email"
-	"net"
+	imaplib "github.com/emersion/go-imap"
+	imapcli "github.com/emersion/go-imap/client"
+	"go-anyway/email/pop3"
+	smtplib "net/smtp"
 	// "github.com/gin-gonic/gin"
 )
 
 func test() (err error) {
-	conn, err := net.Dial("tcp", "pop-mail.outlook.com:995")
+	conn, err := tls.Dial("tcp", "pop-mail.outlook.com:995", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -23,14 +26,25 @@ func test() (err error) {
 }
 
 func pop() (err error) {
-	var addr = "pop-mail.outlook.com:955"
-	client, err := email.Dial(addr)
-	fmt.Print(11)
+	addr := "pop-mail.outlook.com:995"
+	client, err := pop3.DialTLS(addr)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 	err = client.User("jack.hg2018@outlook.com")
+	err = client.Pass("Gzhg2018")
+	count, size, err := client.Stat()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(count, size)
+	size, err = client.List(1)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(size)
+
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -39,10 +53,76 @@ func pop() (err error) {
 
 }
 
+func imap() (err error) {
+	addr := "imap-mail.outlook.com:993"
+	client, err := imapcli.DialTLS(addr, nil)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	defer client.LoggedOut()
+
+	// Login
+	if err := client.Login("jack.hg2018@outlook.com", "Gzhg2018"); err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("login success!")
+
+	// List mailboxes
+	mailboxes := make(chan *imaplib.MailboxInfo, 20)
+	done := make(chan error, 1)
+	go func() {
+		done <- client.List("", "*", mailboxes)
+	}()
+
+	fmt.Println("Mailboxes:")
+	for m := range mailboxes {
+		fmt.Println("* " + m.Name)
+	}
+
+	if err := <-done; err != nil {
+		fmt.Println(err)
+	}
+	return
+}
+
+func smtp() (err error) {
+	host := "smtp.office365.com"
+	// host := "smtp-mail.outlook.com"
+	au := smtplib.PlainAuth("", "jack.hg208@outlook.com", "Gzhg2018", host)
+	fmt.Println(au)
+	client, err := smtplib.Dial(host + ":587")
+	if err != nil {
+		return err
+	}
+	if err = client.Hello("localhost"); err != nil {
+		return err
+	}
+	if ok, _ := client.Extension("STARTTLS"); ok {
+		config := &tls.Config{ServerName: host, InsecureSkipVerify: true}
+		if err = client.StartTLS(config); err != nil {
+			return err
+		}
+		if err = client.Auth(au); err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		fmt.Println(err)
+		return err
+	} else {
+		return nil
+	}
+}
+
 func main() {
 	fmt.Println("hello")
 	// test()
-	pop()
+	// pop()
+	// imap()
+	smtp()
 	// r := gin.Default()
 	// r.GET("/ping", func(c *gin.Context) {
 	// 	c.JSON(200, gin.H{

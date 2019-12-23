@@ -7,6 +7,7 @@ import (
 	imapcli "github.com/emersion/go-imap/client"
 	"go-anyway/email/pop3"
 	smtplib "net/smtp"
+	smtplibExt "go-anyway/email/smtp-ext"
 	// "github.com/gin-gonic/gin"
 )
 
@@ -89,8 +90,8 @@ func imap() (err error) {
 }
 
 func smtp() (err error) {
-	host := "smtp.office365.com"
-	// host := "smtp-mail.outlook.com"
+	// host := "smtp.office365.com"
+	host := "52.98.77.98"
 	au := smtplib.PlainAuth("", "jack.hg208@outlook.com", "Gzhg2018", host)
 	fmt.Println(au)
 	client, err := smtplib.Dial(host + ":587")

@@ -6,8 +6,8 @@ import (
 	imaplib "github.com/emersion/go-imap"
 	imapcli "github.com/emersion/go-imap/client"
 	"go-anyway/email/pop3"
+	smtplibext "go-anyway/email/smtp"
 	smtplib "net/smtp"
-	smtplibExt "go-anyway/email/smtp-ext"
 	// "github.com/gin-gonic/gin"
 )
 
@@ -65,7 +65,7 @@ func imap() (err error) {
 	defer client.LoggedOut()
 
 	// Login
-	if err := client.Login("jack.hg2018@outlook.com", "Gzhg2018"); err != nil {
+	if err := client.Login("jack.hg2018@outlook.com", "***"); err != nil {
 		fmt.Println(err)
 	}
 
@@ -90,19 +90,20 @@ func imap() (err error) {
 }
 
 func smtp() (err error) {
-	// host := "smtp.office365.com"
-	host := "52.98.77.98"
-	au := smtplib.PlainAuth("", "jack.hg208@outlook.com", "Gzhg2018", host)
+	host := "smtp.office365.com"
+	// host := "52.98.77.98"
+	// au := smtplib.PlainAuth("", "jack.hg208@outlook.com", "Gzhg2018", host)
+	au := smtplibext.LoginAuth("jack.hg2018@outlook.com", "Gzhg2018", host)
 	fmt.Println(au)
-	client, err := smtplib.Dial(host + ":587")
+	client, err := smtplib.Dial(host + ":25")
 	if err != nil {
 		return err
 	}
-	if err = client.Hello("localhost"); err != nil {
+	if err = client.Hello("LAPTOP-CML0ECA3"); err != nil {
 		return err
 	}
 	if ok, _ := client.Extension("STARTTLS"); ok {
-		config := &tls.Config{ServerName: host, InsecureSkipVerify: true}
+		config := &tls.Config{ServerName: host, InsecureSkipVerify: false}
 		if err = client.StartTLS(config); err != nil {
 			return err
 		}

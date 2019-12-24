@@ -1,28 +1,29 @@
-
 // Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package smtp-ext
+package smtpext
 
 import (
-	"net/smtp"
-	"crypto/hmac"
-	"crypto/md5"
 	"errors"
-	"fmt"
+	. "net/smtp"
 )
 
-// loginAuth 
- type loginAuth struct {
+// loginAuth
+type loginAuth struct {
 	username, password string
-	host string
+	host               string
 }
- 
+
+// LoginAuth using login type to auth
 func LoginAuth(username, password, host string) Auth {
 	return &loginAuth{username, password, host}
 }
- 
+
+func isLocalhost(name string) bool {
+	return name == "localhost" || name == "127.0.0.1" || name == "::1"
+}
+
 // Start to input the username
 func (a *loginAuth) Start(server *ServerInfo) (string, []byte, error) {
 	// 如果不是安全连接，也不是本地的服务器，报错，不允许不安全的连接
@@ -38,7 +39,7 @@ func (a *loginAuth) Start(server *ServerInfo) (string, []byte, error) {
 	// "auth login" 命令
 	return "LOGIN", resp, nil
 }
- 
+
 // Next to input the password
 func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
 	// 如果服务器需要更多验证，报错

@@ -6,12 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/textproto"
 	"strconv"
 	"strings"
 )
 
 // Client for POP3.
 type Client struct {
+	stls bool
+	text *textproto.Conn
 	conn net.Conn
 	bin  *bufio.Reader
 }
@@ -40,6 +43,8 @@ func DialTLS(addr string) (*Client, error) {
 // NewClient returns a new Client object using an existing connection.
 func NewClient(conn net.Conn) (*Client, error) {
 	client := &Client{
+		stls: false,
+		text: nil,
 		bin:  bufio.NewReader(conn),
 		conn: conn,
 	}
@@ -50,6 +55,33 @@ func NewClient(conn net.Conn) (*Client, error) {
 	}
 	fmt.Println(resp)
 	return client, nil
+}
+
+// STLS sends the STLS command and encrypts all further communication.
+func (c *Client) STLS(config *tls.Config) (error) {
+	// if err := c.hello(); err != nil {
+	// return err
+	// }
+	_, err := c.Cmd("STLS\r\n", nil)
+	if err != nil {
+		return  err
+	}
+	c.conn = tls.Client(c.conn, config)
+	c.text = textproto.NewConn(c.conn)
+	c.stls = true
+	return nil 
+}
+
+// STLSCmd is a convenience function that sends a command and returns the response
+func (c *Client) STLSCmd(expectCode int, format string, args ...interface{}) (int, string, error) {
+	id, err := c.text.Cmd(format, args...)
+	if err != nil {
+		return 0, "", err
+	}
+	c.text.StartResponse(id)
+	defer c.text.EndResponse(id)
+	code, msg, err := c.text.ReadResponse(expectCode)
+	return code, msg, err
 }
 
 // Cmd sent command and receive the first line. the left reponse lines must be retrieved via readLines.

@@ -27,12 +27,32 @@ func test() (err error) {
 }
 
 func pop() (err error) {
-	addr := "pop-mail.outlook.com:995"
-	client, err := pop3.DialTLS(addr)
+	// addr := "pop-mail.outlook.com:995"
+	// client, err := pop3.DialTLS(addr)
+	// addr := "pop-mail.outlook.com:110"
+	host := "pop.163.com"
+	addr := "pop.163.com:110"
+	client, err := pop3.Dial(addr)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
+	_, err = client.Cmd("CAPA\r\n", nil)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	resp, err := client.ReadLines()
+	fmt.Println(resp)
+	config := &tls.Config{ServerName: host, InsecureSkipVerify: true}
+	res, err := client.Cmd("STLS\r\n", nil)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(res)
+	resp, err = client.ReadLines()
+	fmt.Println(resp)
 	err = client.User("jack.hg2018@outlook.com")
 	err = client.Pass("Gzhg2018")
 	count, size, err := client.Stat()
@@ -122,9 +142,9 @@ func smtp() (err error) {
 func main() {
 	fmt.Println("hello")
 	// test()
-	// pop()
+	pop()
 	// imap()
-	smtp()
+	// smtp()
 	// r := gin.Default()
 	// r.GET("/ping", func(c *gin.Context) {
 	// 	c.JSON(200, gin.H{
